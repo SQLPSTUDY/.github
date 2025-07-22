@@ -1,0 +1,55 @@
+# .github/.github/workflows/auto-create-issues.yml
+name: Auto Create Issues for New Repos
+on:
+  repository:
+    types: [created]
+
+jobs:
+  create-default-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Welcome Issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ORG_TOKEN }}
+          script: |
+            await github.rest.issues.create({
+              owner: '${{ github.event.organization.login }}',
+              repo: '${{ github.event.repository.name }}',
+              title: '📌 [고정] 리포지토리 시작 가이드',
+              body: `
+            ## 🎉 새로운 리포지토리에 오신 것을 환영합니다!
+            
+            ### 📋 초기 설정 체크리스트
+            - [ ] README.md 작성
+            - [ ] 라이선스 설정
+            - [ ] 브랜치 보호 규칙 설정
+            - [ ] 팀원 권한 설정
+            - [ ] CI/CD 파이프라인 구성
+            
+            ### 📞 문의사항
+            질문이 있으시면 #dev-support 채널로 연락주세요.
+            `,
+              labels: ['📌 고정', '🚀 시작']
+            });
+            
+      - name: Pin the Issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.ORG_TOKEN }}
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: '${{ github.event.organization.login }}',
+              repo: '${{ github.event.repository.name }}',
+              labels: '📌 고정'
+            });
+            
+            if (issues.data.length > 0) {
+              await github.rest.issues.update({
+                owner: '${{ github.event.organization.login }}',
+                repo: '${{ github.event.repository.name }}',
+                issue_number: issues.data[0].number,
+                state: 'open',
+                pinned: true
+              });
+            }
